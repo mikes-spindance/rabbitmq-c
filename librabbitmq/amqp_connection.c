@@ -329,7 +329,6 @@ int amqp_handle_input(amqp_connection_state_t state,
         /* fall through to process body */
       }
     }
-    /* fall through to process body */
 
   case CONNECTION_STATE_BODY: {
     amqp_bytes_t encoded;

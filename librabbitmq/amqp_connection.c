@@ -271,6 +271,7 @@ int amqp_handle_input(amqp_connection_state_t state,
   case CONNECTION_STATE_HEADER: {
     amqp_channel_t channel;
     amqp_pool_t *channel_pool;
+    size_t new_target_size;
     /* frame length is 3 bytes in */
     channel = amqp_d16(raw_frame, 1);
 
@@ -279,8 +280,12 @@ int amqp_handle_input(amqp_connection_state_t state,
       return AMQP_STATUS_NO_MEMORY;
     }
 
-    state->target_size
-      = amqp_d32(raw_frame, 3) + HEADER_SIZE + FOOTER_SIZE;
+    /* don't allow a corrupt frame size to allocate a huge block of memory. */
+    new_target_size = amqp_d32(raw_frame, 3) + HEADER_SIZE + FOOTER_SIZE;
+    if (new_target_size > (size_t) state->frame_max) {
+       return AMQP_STATUS_BAD_AMQP_DATA;
+    }
+    state->target_size = new_target_size;
 
     amqp_pool_alloc_bytes(channel_pool, state->target_size, &state->inbound_buffer);
     if (NULL == state->inbound_buffer.bytes) {
